@@ -3,134 +3,274 @@ session_start();
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../jdf.php';
 
-
+// بررسی لاگین
 $query = $pdo->prepare("SELECT * FROM admin WHERE username=:username");
-    $query->bindParam("username", $_SESSION["user"], PDO::PARAM_STR);
-    $query->execute();
-    $result = $query->fetch(PDO::FETCH_ASSOC);
-    $query = $pdo->prepare("SELECT * FROM invoice");
-    $query->execute();
-    $listinvoice = $query->fetchAll();
+$query->bindParam("username", $_SESSION["user"], PDO::PARAM_STR);
+$query->execute();
+$result = $query->fetch(PDO::FETCH_ASSOC);
+
 if( !isset($_SESSION["user"]) || !$result ){
     header('Location: login.php');
     return;
 }
+
+// دریافت لیست سفارشات
+$query = $pdo->prepare("SELECT * FROM invoice ORDER BY id_invoice DESC");
+$query->execute();
+$listinvoice = $query->fetchAll();
 ?>
+
 <!DOCTYPE html>
-<html lang="en">
-  <head>
+<html lang="fa" dir="rtl">
+<head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="">
-    <meta name="author" content="Mosaddek">
-    <meta name="keyword" content="FlatLab, Dashboard, Bootstrap, Admin, Template, Theme, Responsive, Fluid, Retina">
-    <link rel="shortcut icon" href="img/favicon.html">
+    <title>مدیریت سفارشات | ربات میرزا</title>
 
-    <title>پنل مدیریت ربات میرزا</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" rel="stylesheet">
 
-    <!-- Bootstrap core CSS -->
-    <link href="css/bootstrap.min.css" rel="stylesheet">
-    <link href="css/bootstrap-reset.css" rel="stylesheet">
-    <!--external css-->
-    <link href="assets/font-awesome/css/font-awesome.css" rel="stylesheet" />
-    <link href="assets/jquery-easy-pie-chart/jquery.easy-pie-chart.css" rel="stylesheet" type="text/css" media="screen"/>
-    <link rel="stylesheet" href="css/owl.carousel.css" type="text/css">
-    <!-- Custom styles for this template -->
-    <link href="css/style.css" rel="stylesheet">
-    <link href="css/style-responsive.css" rel="stylesheet" />
+    <style>
+        /* --- استایل‌های پایه --- */
+        :root {
+            --bg-body: #0f172a;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --card-hover: rgba(51, 65, 85, 0.8);
+            --color-primary: #10b981;
+            --color-rose: #f43f5e;
+            --color-blue: #3b82f6;
+            --color-purple: #8b5cf6;
+            --color-warning: #f59e0b;
+        }
 
-    <!-- HTML5 shim and Respond.js IE8 support of HTML5 tooltipss and media queries -->
-    <!--[if lt IE 9]>
-      <script src="js/html5shiv.js"></script>
-      <script src="js/respond.min.js"></script>
-    <![endif]-->
-  </head>
+        [data-theme="light"] {
+            --bg-body: #f0f2f5;
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(0, 0, 0, 0.05);
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --card-hover: rgba(255, 255, 255, 1);
+        }
 
+        * { box-sizing: border-box; font-family: 'Vazir', sans-serif; }
+
+        body {
+            background-color: var(--bg-body);
+            background-image: url('https://www.visitfinland.com/dam/jcr:10ead74c-e5bf-4742-aa7a-1bec21cd4130/800L__20160205_01_Thomas%20Kast_noise.jpg');
+            background-size: cover;
+            background-attachment: fixed;
+            background-blend-mode: overlay;
+            min-height: 100vh;
+            color: var(--text-main);
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.85); z-index: -1; transition: 0.3s;
+        }
+        [data-theme="light"] body::before { background: rgba(241, 245, 249, 0.5); }
+
+        #container { display: flex; flex-direction: column; width: 100%; }
+        #main-content { margin-top: 80px; margin-right: 260px; padding: 30px; transition: all 0.3s ease; min-height: calc(100vh - 80px); }
+        @media (max-width: 992px) { #main-content { margin-right: 0 !important; padding: 20px; } }
+
+        /* --- استایل باکس جدول --- */
+        .table-wrapper {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(12px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .table-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px;
+        }
+
+        .page-title { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+        .page-title i { color: var(--color-primary); }
+
+        /* --- جدول DataTables --- */
+        table.dataTable { width: 100% !important; border-collapse: collapse !important; color: var(--text-main) !important; }
+        
+        table.dataTable thead th {
+            background: rgba(255, 255, 255, 0.05); color: var(--text-muted); font-weight: 600;
+            padding: 15px 15px 15px 35px !important; border-bottom: 1px solid var(--glass-border) !important;
+            text-align: right !important; position: relative;
+        }
+
+        table.dataTable tbody td {
+            padding: 15px !important; border-bottom: 1px solid var(--glass-border) !important;
+            vertical-align: middle; font-size: 14px;
+        }
+
+        table.dataTable tbody tr { background-color: transparent !important; transition: background 0.2s; }
+        table.dataTable tbody tr:hover { background-color: rgba(255, 255, 255, 0.05) !important; }
+
+        /* --- وضعیت‌ها (Badges) --- */
+        .badge { padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 500; display: inline-block; white-space: nowrap; }
+        
+        .badge-active { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2); }
+        .badge-unpaid { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.2); }
+        .badge-danger { background: rgba(244, 63, 94, 0.15); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.2); }
+        .badge-info { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.2); }
+        .badge-gray { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.2); }
+
+        /* --- استایل اینپوت‌ها و صفحه‌بندی --- */
+        .dataTables_wrapper .dataTables_filter input {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border);
+            color: var(--text-main); border-radius: 8px; padding: 6px 10px; outline: none; margin-right: 15px !important;
+        }
+        
+        .dataTables_wrapper .dataTables_length select {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border);
+            color: var(--text-main); border-radius: 8px; padding: 6px 10px; outline: none;
+            appearance: none; -webkit-appearance: none; text-align: center; width: 50px;
+        }
+        .dataTables_wrapper .dataTables_length select option { background-color: #fff !important; color: #333 !important; }
+
+        .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter, .dataTables_wrapper .dataTables_processing {
+            color: var(--text-muted) !important; margin-bottom: 15px;
+        }
+
+        .dataTables_wrapper .bottom {
+            display: flex; justify-content: space-between; align-items: center; margin-top: 20px;
+            padding-top: 15px; border-top: 1px solid var(--glass-border); flex-wrap: wrap; gap: 10px;
+        }
+
+        .dataTables_wrapper .dataTables_info { color: var(--text-muted) !important; margin: 0 !important; padding: 0 !important; }
+        .dataTables_wrapper .dataTables_paginate { display: flex; align-items: center; }
+        
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            color: var(--text-main) !important; border-radius: 6px !important; padding: 5px 12px !important;
+            margin: 0 2px; border: none !important;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current { background: var(--color-primary) !important; color: white !important; }
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover { background: rgba(255,255,255,0.1) !important; color: var(--text-main) !important; }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.disabled { color: var(--text-muted) !important; background: transparent !important; cursor: default; }
+
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        @media (max-width: 768px) {
+            .dataTables_wrapper .bottom { flex-direction: column; align-items: flex-start; }
+            .dataTables_wrapper .dataTables_paginate { margin-top: 10px !important; width: 100%; justify-content: center; }
+        }
+
+        /* دکمه تم */
+        .theme-toggle {
+            position: fixed; bottom: 30px; left: 30px; width: 50px; height: 50px;
+            background: var(--color-purple); border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; cursor: pointer; box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
+            z-index: 2000; transition: transform 0.3s; color: white; font-size: 20px; border: none;
+        }
+        .theme-toggle:hover { transform: scale(1.1) rotate(15deg); }
+    </style>
+</head>
 
 <body>
 
-    <section id="container" class="">
-<?php include("header.php");
-?>
-        <!--main content start-->
+    <section id="container">
+        <?php include("header.php"); ?>
+
         <section id="main-content">
             <section class="wrapper">
-                <!-- page start-->
-                <div class="row">
-                    <div class="col-lg-12">
-                        <section class="panel">
-                            <header class="panel-heading">لیست سفارشات</header>
-                            <table class="table table-striped border-top" id="sample_1">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 8px;">
-                                            <input type="checkbox" class="group-checkable" data-set="#sample_1 .checkboxes" /></th>
-                                        <th class="hidden-phone">آیدی عددی</th>
-                                        <th class="hidden-phone">شناسه سفارش</th>
-                                        <th>نام کاربری کانفیگ</th>
-                                        <th class="hidden-phone">لوکیشن سرویس</th>
-                                        <th class="hidden-phone">نام محصول</th>
-                                        <th class="hidden-phone">تاریخ سفارش</th>
-                                        <th class="hidden-phone">قیمت سفارش</th>
-                                        <th class="hidden-phone">وضعیت سفارش</th>
-                                    </tr>
-                                </thead>
-                                <tbody> <?php
-                                foreach($listinvoice as $list){
-                                    if(intval($list['time_sell'])){
-                                        $list['time_sell'] = jdate('Y/m/d |  H:i:s',$list['time_sell']);
+                
+                <div class="table-wrapper">
+                    <div class="table-header">
+                        <div class="page-title">
+                            <i class="fa-solid fa-cart-shopping"></i>
+                            لیست سفارشات
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table id="invoiceTable" class="display" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>شناسه سفارش</th>
+                                    <th>آیدی کاربر</th>
+                                    <th>نام کانفیگ</th>
+                                    <th>لوکیشن</th>
+                                    <th>محصول</th>
+                                    <th>تاریخ سفارش</th>
+                                    <th>مبلغ (تومان)</th>
+                                    <th>وضعیت</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach($listinvoice as $list): 
+                                    // فرمت کردن تاریخ
+                                    $time_sell = $list['time_sell'];
+                                    if(is_numeric($time_sell)){
+                                        $time_sell = jdate('Y/m/d | H:i',$time_sell);
                                     }
-                                    $list['Status'] = [
-                                        'unpaid' => "در انتظار پرداخت",
-                                        "active" => "فعال",
-                                        "disabledn" => "ناموجود در پنل",
-                                        "end_of_time" => "هشدار زمان باقی ماند",
-                                        "end_of_volume" => "هشدار حجم باقی مانده",
-                                        "sendedwarn" => "هشدار حجم و زمان باقی مانده",
-                                        "send_on_hold" => "هشدار متصل نشدن به کانفیگ",
-                                        'removebyuser' => 'حذف شده توسط کاربر'
-                                        ][$list['Status']];
-                                        if($list['price_product'] == 0)$list['price_product'] = "رایگان";
-                                   echo "<tr class=\"odd gradeX\">
-                                        <td>
-                                        <input type=\"checkbox\" class=\"checkboxes\" value=\"1\" /></td>
-                                        <td>{$list['id_user']}</td>
-                                        <td class=\"hidden-phone\">{$list['id_invoice']}</td>
-                                        <td class=\"hidden-phone\">{$list['username']}</td>
-                                        <td class=\"hidden-phone\">{$list['Service_location']}</td>
-                                        <td class=\"hidden-phone\">{$list['name_product']}</td>
-                                        <td class=\"hidden-phone time_Sell\">{$list['time_sell']}</td>
-                                        <td class=\"hidden-phone\">{$list['price_product']}</td>
-                                        <td class=\"hidden-phone\">{$list['Status']}</td>
-                                    </tr>";
-                                }
-                                    ?>
-                                </tbody>
-                            </table>
-                        </section>
+
+                                    // تعیین وضعیت و رنگ بج
+                                    $statusText = 'نامشخص';
+                                    $statusClass = 'badge-gray';
+
+                                    switch($list['Status']) {
+                                        case 'unpaid': $statusText = 'در انتظار پرداخت'; $statusClass = 'badge-unpaid'; break;
+                                        case 'active': $statusText = 'فعال'; $statusClass = 'badge-active'; break;
+                                        case 'disabledn': $statusText = 'ناموجود در پنل'; $statusClass = 'badge-gray'; break;
+                                        case 'end_of_time': $statusText = 'اتمام زمان'; $statusClass = 'badge-danger'; break;
+                                        case 'end_of_volume': $statusText = 'اتمام حجم'; $statusClass = 'badge-danger'; break;
+                                        case 'sendedwarn': $statusText = 'هشدار پایانی'; $statusClass = 'badge-warning'; break;
+                                        case 'send_on_hold': $statusText = 'خطای اتصال'; $statusClass = 'badge-info'; break;
+                                        case 'removebyuser': $statusText = 'حذف توسط کاربر'; $statusClass = 'badge-gray'; break;
+                                        
+                                        // اصلاح شد
+                                        case 'removebyadmin': $statusText = 'حذف توسط ادمین'; $statusClass = 'badge-danger'; break;
+                                        
+                                        default: $statusText = $list['Status'];
+                                    }
+
+                                    $price = ($list['price_product'] == 0) ? 'رایگان' : number_format($list['price_product']);
+                                ?>
+                                <tr>
+                                    <td><?php echo $list['id_invoice']; ?></td>
+                                    <td><a href="user.php?id=<?php echo $list['id_user']; ?>" style="color:var(--color-blue); text-decoration:none;"><?php echo $list['id_user']; ?></a></td>
+                                    <td style="direction: ltr; text-align: right;"><?php echo $list['username']; ?></td>
+                                    <td><?php echo $list['Service_location']; ?></td>
+                                    <td><?php echo $list['name_product']; ?></td>
+                                    <td style="direction: ltr; text-align: right;"><?php echo $time_sell; ?></td>
+                                    <td><?php echo $price; ?></td>
+                                    <td><span class="badge <?php echo $statusClass; ?>"><?php echo $statusText; ?></span></td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-                <!-- page end-->
+
             </section>
         </section>
-        <!--main content end-->
     </section>
 
-    <!-- js placed at the end of the document so the pages load faster -->
     <script src="js/jquery.js"></script>
-    <script src="js/bootstrap.min.js"></script>
-    <script src="js/jquery.scrollTo.min.js"></script>
-    <script src="js/jquery.nicescroll.js" type="text/javascript"></script>
-    <script type="text/javascript" src="assets/data-tables/jquery.dataTables.js"></script>
-    <script type="text/javascript" src="assets/data-tables/DT_bootstrap.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 
+    <script>
+        $(document).ready(function() {
+            $('#invoiceTable').DataTable({
+                "language": {
+                    "url": "//cdn.datatables.net/plug-ins/1.13.6/i18n/fa.json"
+                },
+                "order": [[ 0, "desc" ]],
+                "pageLength": 10,
+                "dom": '<"top"lf>rt<"bottom"ip><"clear">'
+            });
+        });
 
-    <!--common script for all pages-->
-    <script src="js/common-scripts.js"></script>
-
-    <!--script for this page only-->
-    <script src="js/dynamic-table.js"></script>
-
-
+    </script>
 </body>
 </html>
