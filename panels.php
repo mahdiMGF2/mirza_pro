@@ -319,7 +319,7 @@ class ManagePanel
             if ($Get_Data_Product['inbounds'] != null) {
                 $Get_Data_Panel['inbounds'] = $Get_Data_Product['inbounds'];
             }
-            $data_Output = addClientS_ui($Get_Data_Panel['name_panel'], $usernameC, $expire, $data_limit, json_decode($Get_Data_Panel['proxies']), $note);
+            $data_Output = addClientS_ui($Get_Data_Panel['name_panel'], $usernameC, $expire, $data_limit, json_decode($Get_Data_Panel['inbounds']), $note);
             if (!$data_Output['success']) {
                 $Output['status'] = 'Unsuccessful';
                 $Output['msg'] = $data_Output['msg'];
