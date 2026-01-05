@@ -18,7 +18,7 @@ use Endroid\QrCode\Writer\PngWriter;
 
 $ManagePanel = new ManagePanel();
 $data = json_decode(file_get_contents("php://input"),true);
-$Payment_report = mysqli_fetch_assoc(mysqli_query($connect, "SELECT * FROM Payment_report WHERE id_order = '{$data['PaymentID']}' LIMIT 1"));
+$Payment_report = select("Payment_report", "*", "id_order", $data['PaymentID'], "fetch");
 if($Payment_report['payment_Status'] == "expire")return;
 $setting = mysqli_fetch_assoc(mysqli_query($connect, "SELECT * FROM setting"));
 $price = $Payment_report['price'];

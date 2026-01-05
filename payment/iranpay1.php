@@ -17,11 +17,11 @@ use Endroid\QrCode\RoundBlockSizeMode;
 use Endroid\QrCode\Writer\PngWriter;
 
 $ManagePanel = new ManagePanel();
-$data = json_decode(file_get_contents("php://input"),true);
-$hashid = htmlspecialchars($data['hashid'], ENT_QUOTES, 'UTF-8');
-$authority = htmlspecialchars($data['authority'], ENT_QUOTES, 'UTF-8');
-$StatusPayment = htmlspecialchars($data['status'], ENT_QUOTES, 'UTF-8');
-$setting = select("setting", "*");  
+$data = json_decode(file_get_contents("php://input"), true);
+$hashid = $data['hashid'];
+$authority = $data['authority'];
+$StatusPayment = $data['status'];
+$setting = select("setting", "*");
 $PaySetting = select("PaySetting", "*", "NamePay", "marchent_floypay", "select")['ValuePay'];
 $Payment_reports = select("Payment_report", "*", "id_order", $hashid, "select");
 $invoice_id = $Payment_reports['id_order'];
