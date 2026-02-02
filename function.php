@@ -772,10 +772,10 @@ function DirectPayment($order_id, $image = 'images.jpg')
     update("user", "Processing_value_tow", "0", "id", $Balance_id['id']);
     update("user", "Processing_value_four", "0", "id", $Balance_id['id']);
     if ($steppay[0] == "getconfigafterpay") {
-        $stmt = $pdo->prepare("SELECT * FROM invoice WHERE username = '{$steppay[1]}' AND Status = 'unpaid' LIMIT 1");
-        $stmt->execute();
-        $get_invoice = $stmt->fetch(PDO::FETCH_ASSOC);
-        $stmt = $pdo->prepare("SELECT * FROM product WHERE name_product = '{$get_invoice['name_product']}' AND (Location = '{$get_invoice['Service_location']}'  or Location = '/all')");
+        $get_invoice = select("invoice", "*", "username", $steppay[1], "select");
+        $stmt = $pdo->prepare("SELECT * FROM product WHERE name_product = :name_product AND (Location = :Service_location  or Location = '/all')");
+        $stmt->bindParam(':name_product', $get_invoice['name_product'], PDO::PARAM_STR);
+        $stmt->bindParam(':Service_location', $get_invoice['Service_location'], PDO::PARAM_STR);
         $stmt->execute();
         $info_product = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($get_invoice['name_product'] == "🛍 حجم دلخواه" || $get_invoice['name_product'] == "⚙️ سرویس دلخواه") {
@@ -786,12 +786,13 @@ function DirectPayment($order_id, $image = 'images.jpg')
             $info_product['Service_time'] = $get_invoice['Service_time'];
             $info_product['price_product'] = $get_invoice['price_product'];
         } else {
-            $stmt = $pdo->prepare("SELECT * FROM product WHERE name_product = '{$get_invoice['name_product']}' AND (Location = '{$get_invoice['Service_location']}'  or Location = '/all')");
+            $stmt = $pdo->prepare("SELECT * FROM product WHERE name_product = :name_product AND (Location = :Service_location  or Location = '/all')");
+            $stmt->bindParam(':name_product', $get_invoice['name_product'], PDO::PARAM_STR);
+            $stmt->bindParam(':Service_location', $get_invoice['Service_location'], PDO::PARAM_STR);
             $stmt->execute();
             $info_product = $stmt->fetch(PDO::FETCH_ASSOC);
         }
         $username_ac = $get_invoice['username'];
-        $randomString = bin2hex(random_bytes(2));
         $marzban_list_get = select("marzban_panel", "*", "name_panel", $get_invoice['Service_location'], "select");
         $date = strtotime("+" . $get_invoice['Service_time'] . "days");
         if (intval($get_invoice['Service_time']) == 0) {
@@ -1486,8 +1487,6 @@ function outtypepanel($typepanel, $message)
         sendmessage($from_id, $message, $optionibsng, 'HTML');
     } elseif ($typepanel == "mikrotik") {
         sendmessage($from_id, $message, $option_mikrotik, 'HTML');
-    } elseif ($typepanel == "eylanpanel") {
-        sendmessage($from_id, $message, $optioneylanpanel, 'HTML');
     }
 }
 function addBackgroundImage($urlimage, $qrCodeResult, $backgroundPath)
@@ -1650,45 +1649,6 @@ function activecron()
     ];
 
     addCronIfNotExists($cronCommands);
-}
-
-function inlineFixer($str, int $count_button = 1)
-{
-    $str = trim($str);
-    if (preg_match('/[\x{0600}-\x{06FF}\x{0750}-\x{077F}\x{08A0}-\x{08FF}]/u', $str)) {
-        if ($count_button >= 1) {
-            switch ($count_button) {
-                case 1:
-                    $maxLength = 56;
-                    break;
-                case 2:
-                    $maxLength = 24;
-                    break;
-                case 3:
-                    $maxLength = 14;
-                    break;
-                default:
-                    $maxLength = 2;
-            }
-            $visualLength = 2;
-            $trimmedString = '';
-            foreach (mb_str_split($str) as $char) {
-                if (preg_match('/[\x{1F300}-\x{1F6FF}\x{1F900}-\x{1F9FF}\x{1F1E6}-\x{1F1FF}]/u', $char)) {
-                    $visualLength += 2;
-                } else
-                    $visualLength++;
-
-                if ($visualLength > $maxLength)
-                    break;
-
-                $trimmedString .= $char;
-            }
-            if ($visualLength > $maxLength) {
-                return trim($trimmedString) . '..';
-            }
-        }
-    }
-    return trim($str);
 }
 function createInvoice($amount)
 {
