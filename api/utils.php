@@ -8,6 +8,10 @@ if (isset($_SERVER['SCRIPT_FILENAME']) && realpath($_SERVER['SCRIPT_FILENAME']) 
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../function.php';
 
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: no-referrer');
+header('Cache-Control: no-store, private');
+
 if (!function_exists('getallheaders')) {
     function getallheaders(): array
     {

@@ -1,7 +1,8 @@
 <?php
 require_once 'config.php';
+require_once __DIR__ . '/src/Contracts/HttpClientInterface.php';
 
-class CurlRequest {
+class CurlRequest implements HttpClientInterface {
     private $url;
     private $headers = [];
     private $timeout = null;
@@ -13,15 +14,15 @@ class CurlRequest {
         $this->timeout = $request_exec_timeout;
     }
 
-    public function setHeaders(array $headers) {
+    public function setHeaders(array $headers): void {
         $this->headers = array_merge($this->headers, $headers);
     }
 
-    public function setBearerToken($token) {
+    public function setBearerToken($token): void {
         $this->authToken = $token;
     }
     
-    public function setCookie($cookieStr) {
+    public function setCookie($cookieStr): void {
         $this->cookie = $cookieStr;
     }
 
@@ -76,22 +77,22 @@ class CurlRequest {
         ];
     }
 
-    public function get() {
+    public function get(): array {
         return $this->execute("GET");
     }
 
-    public function post($data) {
+    public function post($data): array {
         return $this->execute("POST", $data);
     }
 
-    public function put($data) {
+    public function put($data): array {
         return $this->execute("PUT", $data);
     }
 
-    public function delete($data = null) {
+    public function delete($data = null): array {
         return $this->execute("DELETE", $data);
     }
-    public function PATCH($data = null){
+    public function patch($data = null): array {
         return $this->execute('PATCH',$data);
     }
 }
