@@ -16,6 +16,9 @@
             "php": "8.2.0"
         }
     },
+    "scripts": {
+        "test": "php tests/smoke.php"
+    },
     "prefer-stable": true,
     "minimum-stability": "stable"
 }
