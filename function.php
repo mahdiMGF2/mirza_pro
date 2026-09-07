@@ -2036,9 +2036,28 @@ function languagechange($path_dir = null, string $lang = 'fa')
         $lang = 'fa';
     $base_dir = $path_dir ?: __DIR__;
     $texts = require $base_dir . '/lang/' . $lang . '.php';
-    if (is_array($texts))
+    if (is_array($texts)) {
         bottext_apply_overrides($texts, $lang);
+        bottext_apply_brand($texts);
+    }
     return $texts;
+}
+
+function bottext_apply_brand(array &$value): void
+{
+    global $brandname;
+    $brand = trim((string) ($brandname ?? 'Root Bot'));
+    if ($brand === '') {
+        return;
+    }
+    foreach ($value as &$item) {
+        if (is_array($item)) {
+            bottext_apply_brand($item);
+        } elseif (is_string($item)) {
+            $item = str_replace(['Mirza Bot', 'Mirza', 'میرزا'], [$brand, $brand, $brand], $item);
+        }
+    }
+    unset($item);
 }
 function bottext_apply_overrides(array &$base, $lang)
 {

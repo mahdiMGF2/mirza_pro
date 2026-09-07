@@ -133,14 +133,29 @@ final class Schema
 
     public function runMigrations(string $directory): void
     {
+        $this->pdo->exec(
+            'CREATE TABLE IF NOT EXISTS `mirza_schema_migrations` (
+                `migration` VARCHAR(190) NOT NULL PRIMARY KEY,
+                `applied_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            ) ' . self::DEFAULT_OPTIONS
+        );
+
         $files = glob($directory . '/*.php') ?: [];
         sort($files);
         foreach ($files as $file) {
             $name = basename($file, '.php');
             try {
+                $check = $this->pdo->prepare('SELECT 1 FROM `mirza_schema_migrations` WHERE `migration` = ? LIMIT 1');
+                $check->execute([$name]);
+                if ($check->fetchColumn() !== false) {
+                    continue;
+                }
+
                 $migration = $this->loadDefinition($file);
                 if (is_callable($migration)) {
                     $migration($this->pdo, $this);
+                    $record = $this->pdo->prepare('INSERT IGNORE INTO `mirza_schema_migrations` (`migration`) VALUES (?)');
+                    $record->execute([$name]);
                 }
             } catch (Throwable $e) {
                 $this->logFailure("migration:$name", $e);

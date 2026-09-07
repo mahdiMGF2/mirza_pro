@@ -43,6 +43,7 @@ function backupCreateArchive(array $sources, $archiveBasePath)
             }
             $zip->close();
             if (is_file($zipPath) && filesize($zipPath) > 0) {
+                @chmod($zipPath, 0600);
                 return $zipPath;
             }
             @unlink($zipPath);
@@ -60,6 +61,7 @@ function backupCreateArchive(array $sources, $archiveBasePath)
         }
         runShellCommand('zip -r ' . escapeshellarg($zipPath) . $arguments . ' 2>&1');
         if (is_file($zipPath) && filesize($zipPath) > 0) {
+            @chmod($zipPath, 0600);
             return $zipPath;
         }
         @unlink($zipPath);
@@ -77,6 +79,7 @@ function backupCreateArchive(array $sources, $archiveBasePath)
             unset($phar);
             @unlink($tarPath);
             if (is_file($gzPath) && filesize($gzPath) > 0) {
+                @chmod($gzPath, 0600);
                 return $gzPath;
             }
         } catch (Exception $e) {
@@ -158,12 +161,18 @@ $botlist = select("botsaz", "*", null, null, "fetchAll");
 if ($botlist) {
     foreach ($botlist as $bot) {
         $botFolder = $sourcefir . '/vpnbot/' . $bot['id_user'] . $bot['username'];
+        $archiveBase = tempnam($destination, 'bot_backup_');
+        if ($archiveBase === false) {
+            continue;
+        }
+        @unlink($archiveBase);
         $archive = backupCreateArchive([
             $botFolder . '/data',
             $botFolder . '/product.json',
             $botFolder . '/product_name.json',
-        ], $destination . '/file');
+        ], $archiveBase);
         if ($archive === null) {
+            @unlink($archiveBase);
             continue;
         }
         telegram('sendDocument', [
@@ -172,11 +181,20 @@ if ($botlist) {
             'document' => new CURLFile($archive),
             'caption' => "@{$bot['username']} | {$bot['id_user']}",
         ]);
-        unlink($archive);
+        @unlink($archive);
     }
 }
 
-$backup_file_name = 'backup_' . date("Y-m-d") . '.sql';
+$backup_file_name = tempnam($destination, 'db_backup_');
+if ($backup_file_name === false) {
+    telegram('sendmessage', [
+        'chat_id' => $setting['Channel_Report'],
+        'message_thread_id' => $reportbackup,
+        'text' => $textbotlang['keyboard']['backupError'],
+    ]);
+    return;
+}
+@chmod($backup_file_name, 0600);
 $dbhost = empty($dbhost) ? "localhost" : $dbhost;
 $isDumped = false;
 
@@ -200,6 +218,7 @@ if (!$isDumped) {
 }
 
 if (!$isDumped) {
+    @unlink($backup_file_name);
     telegram('sendmessage', [
         'chat_id' => $setting['Channel_Report'],
         'message_thread_id' => $reportbackup,
@@ -214,4 +233,4 @@ telegram('sendDocument', [
     'document' => new CURLFile($backup_file_name),
     'caption' => $textbotlang['Admin']['report']['backupCaption'],
 ]);
-unlink($backup_file_name);
+@unlink($backup_file_name);

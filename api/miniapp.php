@@ -9,6 +9,9 @@ require_once __DIR__ . '/../jdf.php';
 require_once __DIR__ . '/../keyboard.php';
 
 header('Content-Type: application/json; charset=utf-8');
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: no-referrer');
+header('Cache-Control: no-store, private');
 date_default_timezone_set('Asia/Tehran');
 ini_set('default_charset', 'UTF-8');
 ini_set('error_log', 'error_log');
@@ -1150,4 +1153,3 @@ match ($action) {
     'purchase' => mini_purchase($data, $method),
     default => sendJsonResponse(false, "Action Invalid", []),
 };
-

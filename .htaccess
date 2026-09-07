@@ -11,6 +11,9 @@
 <Files "error_log">
     Require all denied
 </Files>
+<FilesMatch "^(config|composer)\.php$">
+    Require all denied
+</FilesMatch>
 <Files "*.sh">
     Require all denied
 </Files>

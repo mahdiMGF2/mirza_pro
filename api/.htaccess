@@ -7,6 +7,9 @@
 <Files "utils.php">
     Require all denied
 </Files>
+<FilesMatch "^(config|composer|error_log)\.(php|log)$">
+    Require all denied
+</FilesMatch>
 
 RewriteEngine On
 
