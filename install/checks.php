@@ -729,6 +729,19 @@ function mirza_install_write_config(array $values): array
         . "\$dbname = '" . $escape($values['dbname']) . "';\n"
         . "\$usernamedb = '" . $escape($values['usernamedb']) . "';\n"
         . "\$passworddb = '" . $escape($values['passworddb']) . "';\n"
+        . "\$APIKEY = '" . $escape($values['APIKEY']) . "';\n"
+        . "\$adminnumber = '" . $escape($values['adminnumber']) . "';\n"
+        . "\$domainhosts = '" . $escape($values['domainhosts']) . "';\n"
+        . "\$usernamebot = '" . $escape($values['usernamebot']) . "';\n"
+        . "\$brandname = 'Root Bot';\n"
+        . "\$configValue = static function (string \$environment, string \$fallback): string {\n"
+        . "    \$value = getenv(\$environment);\n"
+        . "    return \$value === false ? \$fallback : (string) \$value;\n"
+        . "};\n"
+        . "\$dbhost = \$configValue('MIRZA_DB_HOST', \$dbhost);\n"
+        . "\$dbname = \$configValue('MIRZA_DB_NAME', \$dbname);\n"
+        . "\$usernamedb = \$configValue('MIRZA_DB_USER', \$usernamedb);\n"
+        . "\$passworddb = \$configValue('MIRZA_DB_PASSWORD', \$passworddb);\n"
         . "\$options = [\n"
         . "    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,\n"
         . "    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,\n"
@@ -742,10 +755,11 @@ function mirza_install_write_config(array $values): array
         . "    error_log(\"Database connection failed: \" . \$e->getMessage());\n"
         . "    die(\"error: database connection failed\");\n"
         . "}\n"
-        . "\$APIKEY = '" . $escape($values['APIKEY']) . "';\n"
-        . "\$adminnumber = '" . $escape($values['adminnumber']) . "';\n"
-        . "\$domainhosts = '" . $escape($values['domainhosts']) . "';\n"
-        . "\$usernamebot = '" . $escape($values['usernamebot']) . "';\n";
+        . "\$APIKEY = \$configValue('MIRZA_TELEGRAM_BOT_TOKEN', \$APIKEY);\n"
+        . "\$adminnumber = \$configValue('MIRZA_ADMIN_CHAT_ID', \$adminnumber);\n"
+        . "\$domainhosts = \$configValue('MIRZA_DOMAIN', \$domainhosts);\n"
+        . "\$usernamebot = \$configValue('MIRZA_BOT_USERNAME', \$usernamebot);\n"
+        . "\$brandname = \$configValue('MIRZA_BRAND_NAME', \$brandname);\n";
 
     if (is_file($path)) {
         @copy($path, __DIR__ . '/state/config.backup.php');

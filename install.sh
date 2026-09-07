@@ -1,4 +1,7 @@
 #!/bin/bash
+# Keep installer-generated temporary files and logs private by default.
+umask 077
+
 # Checking Root Access
 if [[ $EUID -ne 0 ]]; then
     echo -e "\033[31m[ERROR]\033[0m Please run this script as \033[1mroot\033[0m."
@@ -108,6 +111,7 @@ run_step() {
     local counter="$STEP_NO"
     [ "$STEP_TOTAL" -gt 0 ] && counter="$STEP_NO/$STEP_TOTAL"
     : > "$INSTALL_LOG"
+    chmod 600 "$INSTALL_LOG" 2>/dev/null
     local start; start=$(date +%s)
     bash -c "$cmd" >> "$INSTALL_LOG" 2>&1 &
     local pid=$!
@@ -265,7 +269,14 @@ function self_update_script() {
         else
             echo -e "\e[32mNew version found - updating...\033[0m"
         fi
-        install -m 0755 "$TEMP_FILE" "$MASTER_PATH" 2>/dev/null || { mv "$TEMP_FILE" "$MASTER_PATH"; chmod +x "$MASTER_PATH"; }
+        local update_backup="${MASTER_PATH}.bak"
+        if [ -f "$MASTER_PATH" ]; then
+            cp -p "$MASTER_PATH" "$update_backup" 2>/dev/null || true
+            chmod 700 "$update_backup" 2>/dev/null || true
+        fi
+        install -m 0755 "$TEMP_FILE" "${MASTER_PATH}.new" 2>/dev/null \
+            && mv -f "${MASTER_PATH}.new" "$MASTER_PATH" \
+            || { rm -f "${MASTER_PATH}.new"; mv "$TEMP_FILE" "$MASTER_PATH"; chmod 0755 "$MASTER_PATH"; }
         rm -f "$TEMP_FILE"
         _link_mirza "$MASTER_PATH" "$BIN_LINK"
         echo -e "\e[32mUpdated. Restarting with the latest version...\033[0m"
@@ -1829,6 +1840,7 @@ function install_bot() {
         rm -rf "$TEMP_DIR"
         sudo chown -R www-data:www-data "$BOT_DIR"
         sudo chmod -R 755 "$BOT_DIR"
+        sudo chmod 640 "$BOT_DIR/config.php" 2>/dev/null
         wait
         run_step "Installing PHP dependencies (composer)" "install_php_deps '$BOT_DIR'" \
             || { show_step_error; install_pause "Installing PHP dependencies"; }
@@ -2292,6 +2304,7 @@ function update_bot() {
     fi
     sudo chown -R www-data:www-data "$BOT_DIR"
     sudo chmod -R 755 "$BOT_DIR"
+    sudo chmod 640 "$BOT_DIR/config.php" 2>/dev/null
     DOMAIN_NAME=""
     if [ -f "$CONFIG_PATH" ]; then
         DOMAIN_NAME=$(grep "^\$domainhosts" "$CONFIG_PATH" | cut -d"'" -f2 | cut -d'/' -f1)
@@ -2623,6 +2636,7 @@ try { \$pdo = new PDO(\$dsn, \$usernamedb, \$passworddb, \$options); } catch (\P
 EOF
     chown -R www-data:www-data "$NEW_BOT_DIR"
     chmod -R 755 "$NEW_BOT_DIR"
+    chmod 640 "$NEW_BOT_DIR/config.php" 2>/dev/null
     run_step "Installing PHP dependencies (composer)" "install_php_deps '$NEW_BOT_DIR'" \
         || { show_step_error; echo -e "\033[31mError: Failed to install PHP dependencies. Run 'composer install' in $NEW_BOT_DIR before using the bot.\033[0m"; exit 1; }
     echo -e "\033[33mReconfiguring Apache...\033[0m"
